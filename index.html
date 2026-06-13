@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>德语教学分层管理系统</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4F46E5',
+            secondary: '#10B981',
+            accent: '#F59E0B',
+            tierA: '#EF4444',
+            tierB: '#F59E0B',
+            tierC: '#10B981'
+          },
+          fontFamily: {
+            sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-6xl mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <span class="text-white text-xl">🇩🇪</span>
+            </div>
+            <h1 class="text-xl font-semibold text-gray-800">德语教学分层管理系统</h1>
+          </div>
+          <button 
+            @click="showAddForm = true" 
+            class="bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all hover:scale-105"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            添加学生
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <div class="max-w-6xl mx-auto px-6 py-6">
+      <div class="grid grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-gray-500 text-sm">学生总数</div>
+          <div class="text-3xl font-bold text-gray-800 mt-1">{{ students.length }}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-gray-500 text-sm">A层 (优秀)</div>
+          <div class="text-3xl font-bold text-tierA mt-1">{{ tierA.length }}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-gray-500 text-sm">B层 (中等)</div>
+          <div class="text-3xl font-bold text-tierB mt-1">{{ tierB.length }}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div class="text-gray-500 text-sm">C层 (基础)</div>
+          <div class="text-3xl font-bold text-tierC mt-1">{{ tierC.length }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <button 
+          @click="activeTab = 'manage'"
+          :class="['px-4 py-2 rounded-md font-medium transition-all', activeTab === 'manage' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-800']"
+        >
+          学生管理
+        </button>
+        <button 
+          @click="activeTab = 'tier'"
+          :class="['px-4 py-2 rounded-md font-medium transition-all', activeTab === 'tier' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-800']"
+        >
+          分层视图
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-6 py-6">
+      <!-- Student List Tab -->
+      <div v-if="activeTab === 'manage'">
+        <div v-if="students.length === 0" class="bg-white rounded-xl p-12 shadow-sm text-center">
+          <div class="text-6xl mb-4">📚</div>
+          <p class="text-gray-500 text-lg">暂无学生</p>
+          <p class="text-gray-400 text-sm mt-2">点击右上角「添加学生」开始</p>
+        </div>
+        <div v-else class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th class="text-left px-6 py-3 text-sm font-semibold text-gray-600">姓名</th>
+                <th class="text-left px-6 py-3 text-sm font-semibold text-gray-600">分数</th>
+                <th class="text-left px-6 py-3 text-sm font-semibold text-gray-600">学习目标</th>
+                <th class="text-left px-6 py-3 text-sm font-semibold text-gray-600">层级</th>
+                <th class="text-left px-6 py-3 text-sm font-semibold text-gray-600">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr v-for="student in students" :key="student.id" class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 font-medium text-gray-800">{{ student.name }}</td>
+                <td class="px-6 py-4 text-gray-600">{{ student.score }}</td>
+                <td class="px-6 py-4 text-gray-600">{{ student.goal }}</td>
+                <td class="px-6 py-4">
+                  <span 
+                    :class="[
+                      'px-2 py-1 rounded-full text-xs font-medium',
+                      getTierClass(student.tier)
+                    ]"
+                  >
+                    {{ getTierName(student.tier) }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 flex gap-2">
+                  <button @click="editStudent(student)" class="text-primary hover:text-indigo-800 font-medium text-sm">编辑</button>
+                  <button @click="confirmDelete(student)" class="text-red-500 hover:text-red-700 font-medium text-sm">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tier View Tab -->
+      <div v-else class="grid grid-cols-3 gap-6">
+        <div v-for="tier in ['A', 'B', 'C']" :key="tier" 
+             :class="['bg-white rounded-xl p-6 shadow-sm border-t-4', getTierBorderClass(tier)]">
+          <div class="flex items-center gap-2 mb-4">
+            <span :class="['w-8 h-8 rounded-full flex items-center justify-center text-white font-bold', getTierBgClass(tier)]">{{ tier }}</span>
+            <div>
+              <h3 class="font-semibold text-gray-800">{{ getTierTitle(tier) }}</h3>
+              <p class="text-sm text-gray-500">{{ getTierCount(tier) }} 名学生</p>
+            </div>
+          </div>
+          <div v-if="getStudentsByTier(tier).length === 0" class="text-center py-8 text-gray-400">
+            <p class="text-sm">暂无学生</p>
+          </div>
+          <div v-else class="space-y-3">
+            <div v-for="student in getStudentsByTier(tier)" :key="student.id" 
+                 class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-gray-800">{{ student.name }}</div>
+                <div class="text-xs text-gray-500">分数: {{ student.score }}</div>
+              </div>
+              <button @click="editStudent(student)" class="text-primary hover:text-indigo-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Form Modal -->
+    <div v-if="showAddForm || editingStudent" 
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @click.self="closeForm">
+      <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          {{ editingStudent ? '编辑学生' : '添加学生' }}
+        </h2>
+        <form @submit.prevent="saveStudent" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">姓名</label>
+            <input 
+              v-model="formData.name" 
+              type="text" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+              placeholder="输入学生姓名"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">分数 (0-100)</label>
+            <input 
+              v-model.number="formData.score" 
+              type="number" 
+              min="0" 
+              max="100" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+              placeholder="0-100"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">学习目标</label>
+            <select 
+              v-model="formData.goal"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+            >
+              <option value="德福考试">德福考试</option>
+              <option value="DSH考试">DSH考试</option>
+              <option value="欧标A2">欧标A2</option>
+              <option value="欧标B1">欧标B1</option>
+              <option value="欧标B2">欧标B2</option>
+              <option value="日常交流">日常交流</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">手动分层 (可选)</label>
+            <select 
+              v-model="formData.manualTier"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+            >
+              <option value="">自动 (根据分数)</option>
+              <option value="A">A层 - 优秀</option>
+              <option value="B">B层 - 中等</option>
+              <option value="C">C层 - 基础</option>
+            </select>
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeForm" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors">
+              取消
+            </button>
+            <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 font-medium transition-colors">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div v-if="deletingStudent" 
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @click.self="deletingStudent = null">
+      <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+        <div class="text-center">
+          <div class="text-5xl mb-4">⚠️</div>
+          <h2 class="text-lg font-semibold text-gray-800 mb-2">确认删除</h2>
+          <p class="text-gray-500 mb-6">确定要删除学生「{{ deletingStudent.name }}」吗？此操作无法撤销。</p>
+          <div class="flex gap-3">
+            <button @click="deletingStudent = null" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors">
+              取消
+            </button>
+            <button @click="deleteStudent" class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors">
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted } = Vue
+
+    createApp({
+      setup() {
+        const students = ref([])
+        const activeTab = ref('manage')
+        const showAddForm = ref(false)
+        const editingStudent = ref(null)
+        const deletingStudent = ref(null)
+        
+        const formData = ref({
+          name: '',
+          score: 70,
+          goal: '德福考试',
+          manualTier: ''
+        })
+
+        // 加载本地数据
+        const loadStudents = () => {
+          // 强制使用新示例数据（可注释此行以保留用户数据）
+          localStorage.removeItem('german-students')
+          const saved = localStorage.getItem('german-students')
+          if (saved) {
+            students.value = JSON.parse(saved)
+          } else {
+            // 示例数据
+            students.value = [
+              { id: 1, name: '李明', score: 95, goal: '德福考试', tier: 'A' },
+              { id: 2, name: '王芳', score: 88, goal: 'DSH考试', tier: 'A' },
+              { id: 3, name: '张伟', score: 72, goal: '欧标B2', tier: 'B' },
+              { id: 4, name: '刘洋', score: 85, goal: '德福考试', tier: 'A' },
+              { id: 5, name: '陈静', score: 68, goal: '欧标B1', tier: 'B' },
+              { id: 6, name: '赵磊', score: 58, goal: '欧标A2', tier: 'C' },
+              { id: 7, name: '周婷', score: 92, goal: '德福考试', tier: 'A' },
+              { id: 8, name: '吴强', score: 45, goal: '日常交流', tier: 'C' },
+              { id: 9, name: '郑洁', score: 78, goal: 'DSH考试', tier: 'B' },
+              { id: 10, name: '孙浩', score: 83, goal: '德福考试', tier: 'A' },
+              { id: 11, name: '林梅', score: 62, goal: '欧标B1', tier: 'B' },
+              { id: 12, name: '黄磊', score: 51, goal: '欧标A2', tier: 'C' },
+              { id: 13, name: '杨丽', score: 90, goal: '德福考试', tier: 'A' },
+              { id: 14, name: '徐刚', score: 75, goal: 'DSH考试', tier: 'B' },
+              { id: 15, name: '马超', score: 38, goal: '日常交流', tier: 'C' },
+              { id: 16, name: '朱华', score: 87, goal: '德福考试', tier: 'A' },
+              { id: 17, name: '胡涛', score: 66, goal: '欧标B1', tier: 'B' },
+              { id: 18, name: '郭敏', score: 55, goal: '欧标A2', tier: 'C' },
+              { id: 19, name: '何静', score: 81, goal: 'DSH考试', tier: 'B' },
+              { id: 20, name: '高峰', score: 93, goal: '德福考试', tier: 'A' },
+              { id: 21, name: '曾琳', score: 48, goal: '日常交流', tier: 'C' },
+              { id: 22, name: '肖鹏', score: 70, goal: '欧标B2', tier: 'B' },
+              { id: 23, name: '彭勇', score: 86, goal: '德福考试', tier: 'A' },
+              { id: 24, name: '田芳', score: 60, goal: '欧标B1', tier: 'B' },
+              { id: 25, name: '苗雨', score: 42, goal: '日常交流', tier: 'C' },
+              { id: 26, name: '葛伟', score: 79, goal: 'DSH考试', tier: 'B' },
+              { id: 27, name: '硅舒', score: 91, goal: '德福考试', tier: 'A' },
+              { id: 28, name: '梅婷', score: 53, goal: '欧标A2', tier: 'C' },
+              { id: 29, name: '季强', score: 76, goal: '欧标B2', tier: 'B' },
+              { id: 30, name: '申然', score: 89, goal: '德福考试', tier: 'A' }
+            ]
+            saveStudents()
+          }
+        }
+
+        // 保存到本地
+        const saveStudents = () => {
+          localStorage.setItem('german-students', JSON.stringify(students.value))
+        }
+
+        // 自动计算分层
+        const calculateTier = (score) => {
+          if (score >= 85) return 'A'
+          if (score >= 60) return 'B'
+          return 'C'
+        }
+
+        // 各层学生
+        const tierA = computed(() => students.value.filter(s => s.tier === 'A'))
+        const tierB = computed(() => students.value.filter(s => s.tier === 'B'))
+        const tierC = computed(() => students.value.filter(s => s.tier === 'C'))
+
+        // 获取学生列表
+        const getStudentsByTier = (tier) => students.value.filter(s => s.tier === tier)
+        const getTierCount = (tier) => students.value.filter(s => s.tier === tier).length
+        const getTierTitle = (tier) => ({ A: '优秀组', B: '中等组', C: '基础组' }[tier])
+        const getTierName = (tier) => ({ A: 'A层', B: 'B层', C: 'C层' }[tier])
+        
+        const getTierClass = (tier) => ({
+          A: 'bg-red-100 text-red-700',
+          B: 'bg-amber-100 text-amber-700',
+          C: 'bg-green-100 text-green-700'
+        }[tier])
+
+        const getTierBgClass = (tier) => ({
+          A: 'bg-tierA',
+          B: 'bg-tierB', 
+          C: 'bg-tierC'
+        }[tier])
+
+        const getTierBorderClass = (tier) => ({
+          A: 'border-t-tierA',
+          B: 'border-t-tierB',
+          C: 'border-t-tierC'
+        }[tier])
+
+        // 表单操作
+        const closeForm = () => {
+          showAddForm.value = false
+          editingStudent.value = null
+          formData.value = { name: '', score: 70, goal: '德福考试', manualTier: '' }
+        }
+
+        const editStudent = (student) => {
+          editingStudent.value = student
+          formData.value = {
+            name: student.name,
+            score: student.score,
+            goal: student.goal,
+            manualTier: student.tier
+          }
+        }
+
+        const saveStudent = () => {
+          const tier = formData.value.manualTier || calculateTier(formData.value.score)
+          
+          if (editingStudent.value) {
+            const index = students.value.findIndex(s => s.id === editingStudent.value.id)
+            if (index !== -1) {
+              students.value[index] = {
+                ...students.value[index],
+                name: formData.value.name,
+                score: formData.value.score,
+                goal: formData.value.goal,
+                tier: tier
+              }
+            }
+          } else {
+            students.value.push({
+              id: Date.now(),
+              name: formData.value.name,
+              score: formData.value.score,
+              goal: formData.value.goal,
+              tier: tier
+            })
+          }
+          
+          saveStudents()
+          closeForm()
+        }
+
+        const confirmDelete = (student) => {
+          deletingStudent.value = student
+        }
+
+        const deleteStudent = () => {
+          students.value = students.value.filter(s => s.id !== deletingStudent.value.id)
+          saveStudents()
+          deletingStudent.value = null
+        }
+
+        onMounted(() => {
+          loadStudents()
+        })
+
+        return {
+          students,
+          activeTab,
+          showAddForm,
+          editingStudent,
+          deletingStudent,
+          formData,
+          tierA,
+          tierB,
+          tierC,
+          getStudentsByTier,
+          getTierCount,
+          getTierTitle,
+          getTierName,
+          getTierClass,
+          getTierBgClass,
+          getTierBorderClass,
+          closeForm,
+          editStudent,
+          saveStudent,
+          confirmDelete,
+          deleteStudent
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
